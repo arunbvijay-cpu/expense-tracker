@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b8457">
+<title>Expense Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b8457'/%3E%3Ctext x='32' y='44' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif'%3E%24%3C/text%3E%3C/svg%3E">
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --ink:#1a1d22; --muted:#6b7280; --brand:#0b8457; --brand-ink:#fff; --line:#e5e7eb; --warn:#d97706; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  header { background:var(--brand); color:var(--brand-ink); padding:14px 16px; position:sticky; top:0; z-index:10; }
+  header h1 { margin:0; font-size:18px; font-weight:600; }
+  header .sub { font-size:12px; opacity:.85; margin-top:2px; }
+  main { padding:14px; padding-bottom:90px; max-width:560px; margin:0 auto; }
+  .card { background:var(--card); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgba(0,0,0,.05); margin-bottom:14px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  input, select, button, textarea { font:inherit; }
+  input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  .row { display:flex; gap:10px; }
+  .row > * { flex:1; }
+  button { background:var(--brand); color:var(--brand-ink); border:0; padding:13px; border-radius:10px; font-weight:600; width:100%; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  button.small { padding:8px 10px; width:auto; font-size:13px; }
+  .total { font-size:28px; font-weight:700; }
+  .total .cur { font-size:14px; color:var(--muted); font-weight:500; margin-right:4px; }
+  .tabs { display:flex; gap:6px; margin-bottom:10px; }
+  .tabs button { background:#fff; color:var(--ink); border:1px solid var(--line); padding:8px 12px; font-weight:500; width:auto; }
+  .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+  .list { display:flex; flex-direction:column; gap:8px; }
+  .item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+  .item .l { display:flex; flex-direction:column; }
+  .item .cat { font-weight:600; font-size:14px; }
+  .item .note { font-size:12px; color:var(--muted); }
+  .item .amt { font-weight:600; }
+  .bycat { display:flex; flex-direction:column; gap:6px; }
+  .bycat .row2 { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .bycat .row2:last-child { border-bottom:0; }
+  .pill { display:inline-block; padding:3px 8px; border-radius:999px; background:#fef3c7; color:var(--warn); font-size:11px; margin-left:6px; }
+  .ok { color:var(--brand); }
+  .muted { color:var(--muted); font-size:12px; }
+  dialog { border:0; border-radius:14px; padding:18px; width:90%; max-width:380px; }
+  dialog::backdrop { background:rgba(0,0,0,.4); }
+  .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Expense Tracker</h1>
+  <div class="sub" id="statusLine">Loading…</div>
+</header>
+
+<main>
+
+  <div class="card">
+    <label>Month</label>
+    <input type="month" id="month">
+    <div style="margin-top:12px;" class="total"><span class="cur" id="curLabel">Total</span><span id="totalAmt">0</span></div>
+    <div class="muted" id="countLine">0 entries</div>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button id="tabAdd" class="active">Add</button>
+      <button id="tabList">List</button>
+      <button id="tabBreak">By category</button>
+    </div>
+
+    <section id="paneAdd">
+      <label>Category</label>
+      <div class="row">
+        <select id="category"></select>
+        <button class="secondary small" id="newCatBtn" type="button">＋ New</button>
+      </div>
+      <div style="height:10px;"></div>
+      <label>Amount</label>
+      <input type="number" id="amount" inputmode="decimal" step="0.01" placeholder="0.00">
+      <div style="height:10px;"></div>
+      <label>Note (optional)</label>
+      <input type="text" id="note" placeholder="">
+      <div style="height:12px;"></div>
+      <button id="addBtn">Add expense</button>
+      <div class="hint" id="queueHint"></div>
+    </section>
+
+    <section id="paneList" hidden>
+      <div class="list" id="listEl"></div>
+      <div class="muted" id="listEmpty" hidden>No entries this month.</div>
+    </section>
+
+    <section id="paneBreak" hidden>
+      <div class="bycat" id="breakEl"></div>
+      <div class="muted" id="breakEmpty" hidden>Nothing to break down yet.</div>
+    </section>
+  </div>
+
+  <div class="muted" style="text-align:center;">Data lives in your Google Sheet. Works on multiple phones — just add this page to your home screen.</div>
+</main>
+
+<dialog id="newCatDlg">
+  <h3 style="margin:0 0 10px;">New category</h3>
+  <input type="text" id="newCatName" placeholder="e.g. Fuel">
+  <div style="display:flex; gap:8px; margin-top:12px;">
+    <button class="secondary" id="newCatCancel" type="button">Cancel</button>
+    <button id="newCatSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<script>
+// ====== CONFIG ======
+const API_URL = "https://script.google.com/macros/s/AKfycbzubi4Xko4h_6-sKDWCm51n1KJpxUvP-ZsQzQlPBrG1csj1qmaNyazi_Ugc1ob-MT_WYQ/exec";
+const CURRENCY = "Rs. "; // optional prefix like "₹ " or "$ "
+// ====================
+
+const $ = id => document.getElementById(id);
+const statusLine = $('statusLine');
+const monthInp = $('month');
+const totalAmt = $('totalAmt'), countLine = $('countLine');
+const categorySel = $('category');
+const amountInp = $('amount'), noteInp = $('note');
+const listEl = $('listEl'), breakEl = $('breakEl');
+const queueHint = $('queueHint');
+$('curLabel').textContent = (CURRENCY || '') + 'Total';
+
+let state = { categories: [], expenses: [], month: '' };
+
+function currentMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+monthInp.value = currentMonth();
+state.month = monthInp.value;
+
+// ---- Tabs ----
+const panes = { Add:['tabAdd','paneAdd'], List:['tabList','paneList'], Break:['tabBreak','paneBreak'] };
+Object.entries(panes).forEach(([k,[tabId,paneId]])=>{
+  $(tabId).onclick = () => {
+    Object.values(panes).forEach(([t,p])=>{ $(t).classList.remove('active'); $(p).hidden = true; });
+    $(tabId).classList.add('active'); $(paneId).hidden = false;
+    if (k === 'List') renderList();
+    if (k === 'Break') renderBreak();
+  };
+});
+
+// ---- Network helpers ----
+async function api(path, opts) {
+  const url = API_URL + path;
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+function setStatus(t, cls) {
+  statusLine.textContent = t;
+  statusLine.className = 'sub ' + (cls||'');
+}
+
+// ---- Offline queue ----
+function getQueue() { try { return JSON.parse(localStorage.getItem('queue')||'[]'); } catch { return []; } }
+function setQueue(q) { localStorage.setItem('queue', JSON.stringify(q)); updateQueueHint(); }
+function updateQueueHint() {
+  const n = getQueue().length;
+  queueHint.textContent = n ? (n + ' entr' + (n===1?'y':'ies') + ' queued — will sync when online.') : '';
+}
+
+async function flushQueue() {
+  const q = getQueue();
+  if (!q.length || !navigator.onLine) return;
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({ type:'addExpense', items: q }) });
+    if (r.ok) { setQueue([]); await refresh(); }
+  } catch(e) { /* stay queued */ }
+}
+
+window.addEventListener('online', () => { setStatus('Online — syncing…','ok'); flushQueue().then(()=>setStatus('Online','ok')); });
+window.addEventListener('offline', () => setStatus('Offline — entries will queue'));
+
+// ---- Load categories + expenses ----
+async function refresh() {
+  state.month = monthInp.value;
+  try {
+    const data = await api('?month=' + encodeURIComponent(state.month));
+    state.categories = data.categories || [];
+    state.expenses = data.expenses || [];
+    renderCategories();
+    renderTotal();
+    renderList();
+    renderBreak();
+    setStatus(navigator.onLine ? 'Online' : 'Offline', navigator.onLine ? 'ok' : '');
+  } catch(e) {
+    setStatus('Offline — showing cached');
+  }
+}
+
+function renderCategories() {
+  const cur = categorySel.value;
+  categorySel.innerHTML = '';
+  state.categories.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    categorySel.appendChild(o);
+  });
+  if (cur && state.categories.includes(cur)) categorySel.value = cur;
+}
+
+function monthExpenses() {
+  const q = getQueue().filter(x => x.month === state.month);
+  return [...state.expenses, ...q.map(x => ({...x, _queued:true}))];
+}
+
+function renderTotal() {
+  const items = monthExpenses();
+  const sum = items.reduce((a,b)=>a + (Number(b.amount)||0), 0);
+  totalAmt.textContent = (CURRENCY||'') + sum.toFixed(2);
+  countLine.textContent = items.length + ' entr' + (items.length===1?'y':'ies') + ' in ' + state.month;
+}
+
+function renderList() {
+  const items = monthExpenses().slice().reverse();
+  listEl.innerHTML = '';
+  $('listEmpty').hidden = items.length > 0;
+  items.forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      <div class="l">
+        <span class="cat">${escapeHtml(it.category)}${it._queued?'<span class="pill">queued</span>':''}</span>
+        <span class="note">${escapeHtml(it.note||'')}</span>
+      </div>
+      <div class="amt">${(CURRENCY||'') + (Number(it.amount)||0).toFixed(2)}</div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+function renderBreak() {
+  const items = monthExpenses();
+  const map = {};
+  items.forEach(it => { map[it.category] = (map[it.category]||0) + (Number(it.amount)||0); });
+  const rows = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  breakEl.innerHTML = '';
+  $('breakEmpty').hidden = rows.length > 0;
+  rows.forEach(([c,v]) => {
+    const r = document.createElement('div');
+    r.className = 'row2';
+    r.innerHTML = `<span>${escapeHtml(c)}</span><span>${(CURRENCY||'')+v.toFixed(2)}</span>`;
+    breakEl.appendChild(r);
+  });
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- Add expense ----
+$('addBtn').onclick = async () => {
+  const amount = parseFloat(amountInp.value);
+  const category = categorySel.value;
+  const note = noteInp.value.trim();
+  if (!category || !amount || amount <= 0) { amountInp.focus(); return; }
+  const item = { month: monthInp.value, category, amount, note };
+  amountInp.value = ''; noteInp.value = '';
+
+  if (!navigator.onLine) {
+    const q = getQueue(); q.push(item); setQueue(q);
+    renderTotal(); renderList(); renderBreak();
+    return;
+  }
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({ type:'addExpense', items:[item] }) });
+    if (r.ok) await refresh();
+  } catch(e) {
+    const q = getQueue(); q.push(item); setQueue(q);
+    renderTotal(); renderList(); renderBreak();
+  }
+};
+
+// ---- New category ----
+const dlg = $('newCatDlg');
+$('newCatBtn').onclick = () => { $('newCatName').value = ''; dlg.showModal(); $('newCatName').focus(); };
+$('newCatCancel').onclick = () => dlg.close();
+$('newCatSave').onclick = async () => {
+  const name = $('newCatName').value.trim();
+  if (!name) return;
+  dlg.close();
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({ type:'addCategory', name }) });
+    if (r.ok) { state.categories = r.categories; renderCategories(); categorySel.value = name; }
+  } catch(e) { alert('Need internet to add a category.'); }
+};
+
+monthInp.onchange = refresh;
+updateQueueHint();
+refresh();
+setInterval(flushQueue, 30000);
+
+// ---- Service worker ----
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
