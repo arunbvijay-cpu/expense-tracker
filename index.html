@@ -3,34 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b8457">
+<meta name="theme-color" content="#5d6e63">
 <title>Expense Tracker</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b8457'/%3E%3Ctext x='32' y='44' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif'%3E%24%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235d6e63'/%3E%3Ctext x='32' y='44' font-size='38' text-anchor='middle' fill='white' font-family='sans-serif'%3E%24%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root { --bg:#f4f6f8; --card:#fff; --ink:#1a1d22; --muted:#6b7280; --brand:#0b8457; --brand-ink:#fff; --line:#e5e7eb; --warn:#d97706; }
+  :root {
+    --bg-fallback:#ece4d4;
+    --card:rgba(255,251,243,.94);
+    --card-solid:#fffaf2;
+    --ink:#2c2620;
+    --muted:#7a6f60;
+    --brand:#5d6e63;
+    --brand-soft:rgba(93,110,99,.92);
+    --brand-ink:#fff;
+    --line:rgba(60,45,30,.18);
+    --warn:#b8721c;
+  }
   * { box-sizing:border-box; }
-  html,body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  header { background:var(--brand); color:var(--brand-ink); padding:14px 16px; position:sticky; top:0; z-index:10; }
-  header h1 { margin:0; font-size:18px; font-weight:600; }
-  header .sub { font-size:12px; opacity:.85; margin-top:2px; }
+  html,body { margin:0; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  body { background:var(--bg-fallback); position:relative; min-height:100vh; }
+  body::before {
+    content:''; position:fixed; inset:0; z-index:-2;
+    background-image:url('bg.jpg');
+    background-size:cover; background-position:center top; background-repeat:no-repeat;
+  }
+  body::after {
+    content:''; position:fixed; inset:0; z-index:-1;
+    background:linear-gradient(180deg, rgba(245,239,228,.55) 0%, rgba(245,239,228,.82) 60%, rgba(245,239,228,.92) 100%);
+  }
+  header { background:var(--brand-soft); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--brand-ink); padding:14px 16px; position:sticky; top:0; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  header h1 { margin:0; font-size:18px; font-weight:600; letter-spacing:.2px; }
+  header .sub { font-size:12px; opacity:.9; margin-top:2px; }
   main { padding:14px; padding-bottom:90px; max-width:560px; margin:0 auto; }
-  .card { background:var(--card); border-radius:12px; padding:14px; box-shadow:0 1px 2px rgba(0,0,0,.05); margin-bottom:14px; }
+  .card { background:var(--card); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.5); border-radius:14px; padding:14px; box-shadow:0 2px 10px rgba(60,45,30,.08); margin-bottom:14px; }
+  .stickyCard { position:sticky; top:60px; z-index:9; }
   label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
   input, select, button, textarea { font:inherit; }
-  input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card-solid); color:var(--ink); }
   .row { display:flex; gap:10px; }
   .row > * { flex:1; }
   button { background:var(--brand); color:var(--brand-ink); border:0; padding:13px; border-radius:10px; font-weight:600; width:100%; cursor:pointer; }
-  button.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  button.secondary { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); }
   button.small { padding:8px 10px; width:auto; font-size:13px; }
-  .total { font-size:28px; font-weight:700; }
+  .total { font-size:30px; font-weight:700; line-height:1.1; }
   .total .cur { font-size:14px; color:var(--muted); font-weight:500; margin-right:4px; }
-  .tabs { display:flex; gap:6px; margin-bottom:10px; }
-  .tabs button { background:#fff; color:var(--ink); border:1px solid var(--line); padding:8px 12px; font-weight:500; width:auto; }
+  .monthSwitch { display:flex; align-items:center; gap:8px; }
+  .monthSwitch button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); width:38px; height:38px; padding:0; font-size:18px; font-weight:600; border-radius:10px; flex:0 0 auto; }
+  .monthSwitch .lbl { flex:1; text-align:center; font-weight:600; font-size:16px; }
+  .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .tabs button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); padding:8px 12px; font-weight:500; width:auto; font-size:13px; }
   .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
   .list { display:flex; flex-direction:column; gap:8px; }
-  .item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#fff; border:1px solid var(--line); border-radius:10px; }
+  .item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-solid); border:1px solid var(--line); border-radius:10px; }
   .item .l { display:flex; flex-direction:column; }
   .item .cat { font-weight:600; font-size:14px; }
   .item .note { font-size:12px; color:var(--muted); }
@@ -44,6 +70,17 @@
   dialog { border:0; border-radius:14px; padding:18px; width:90%; max-width:380px; }
   dialog::backdrop { background:rgba(0,0,0,.4); }
   .hint { font-size:12px; color:var(--muted); margin-top:6px; }
+  .monthGrid { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-top:8px; }
+  .monthGrid label { display:flex; align-items:center; gap:6px; padding:8px 10px; background:var(--card-solid); border:1px solid var(--line); border-radius:8px; margin:0; cursor:pointer; font-size:13px; color:var(--ink); }
+  .monthGrid label.disabled { opacity:.45; cursor:not-allowed; }
+  .monthGrid input { width:auto; padding:0; margin:0; }
+  .miniRow { display:flex; gap:8px; margin-top:8px; }
+  .miniRow button { width:auto; padding:6px 10px; font-size:12px; background:var(--card-solid); color:var(--ink); border:1px solid var(--line); font-weight:500; }
+  .chartBox { background:var(--card-solid); border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:10px; }
+  .chartBox h4 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; }
+  .chartWrap { position:relative; height:260px; }
+  .toast { position:fixed; left:50%; bottom:80px; transform:translateX(-50%); background:#1a1d22; color:#fff; padding:10px 16px; border-radius:8px; font-size:13px; z-index:20; opacity:0; transition:opacity .2s; pointer-events:none; }
+  .toast.show { opacity:1; }
 </style>
 </head>
 <body>
@@ -54,9 +91,12 @@
 
 <main>
 
-  <div class="card">
-    <label>Month</label>
-    <input type="month" id="month">
+  <div class="card stickyCard">
+    <div class="monthSwitch">
+      <button id="prevMonth" type="button" aria-label="Previous month">◀</button>
+      <div class="lbl" id="monthLabel">—</div>
+      <button id="nextMonth" type="button" aria-label="Next month">▶</button>
+    </div>
     <div style="margin-top:12px;" class="total"><span class="cur" id="curLabel">Total</span><span id="totalAmt">0</span></div>
     <div class="muted" id="countLine">0 entries</div>
   </div>
@@ -66,6 +106,7 @@
       <button id="tabAdd" class="active">Add</button>
       <button id="tabList">List</button>
       <button id="tabBreak">By category</button>
+      <button id="tabAnalyse">Analyse</button>
     </div>
 
     <section id="paneAdd">
@@ -94,6 +135,38 @@
       <div class="bycat" id="breakEl"></div>
       <div class="muted" id="breakEmpty" hidden>Nothing to break down yet.</div>
     </section>
+
+    <section id="paneAnalyse" hidden>
+      <label>Year</label>
+      <select id="yearSel"></select>
+
+      <label style="margin-top:12px;">Months</label>
+      <div class="monthGrid" id="monthGrid"></div>
+      <div class="miniRow">
+        <button id="selAllMonths" type="button">Select all</button>
+        <button id="clearMonths" type="button">Clear</button>
+      </div>
+
+      <div style="margin-top:14px;" class="total"><span class="cur">Selected total</span><br><span id="anaTotal">0</span></div>
+      <div class="muted" id="anaCount">0 entries</div>
+
+      <div class="chartBox">
+        <h4>By category (donut)</h4>
+        <div class="chartWrap"><canvas id="chartDonut"></canvas></div>
+      </div>
+      <div class="chartBox">
+        <h4>By category (bar)</h4>
+        <div class="chartWrap"><canvas id="chartCatBar"></canvas></div>
+      </div>
+      <div class="chartBox">
+        <h4>Monthly total (line)</h4>
+        <div class="chartWrap"><canvas id="chartLine"></canvas></div>
+      </div>
+      <div class="chartBox">
+        <h4>Monthly total (bar)</h4>
+        <div class="chartWrap"><canvas id="chartMonthBar"></canvas></div>
+      </div>
+    </section>
   </div>
 
   <div class="muted" style="text-align:center;">Data lives in your Google Sheet. Works on multiple phones — just add this page to your home screen.</div>
@@ -108,6 +181,8 @@
   </div>
 </dialog>
 
+<div class="toast" id="toast"></div>
+
 <script>
 // ====== CONFIG ======
 const API_URL = "https://script.google.com/macros/s/AKfycbzubi4Xko4h_6-sKDWCm51n1KJpxUvP-ZsQzQlPBrG1csj1qmaNyazi_Ugc1ob-MT_WYQ/exec";
@@ -115,8 +190,11 @@ const CURRENCY = "Rs. "; // optional prefix like "₹ " or "$ "
 // ====================
 
 const $ = id => document.getElementById(id);
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
 const statusLine = $('statusLine');
-const monthInp = $('month');
+const monthLabel = $('monthLabel');
 const totalAmt = $('totalAmt'), countLine = $('countLine');
 const categorySel = $('category');
 const amountInp = $('amount'), noteInp = $('note');
@@ -124,36 +202,64 @@ const listEl = $('listEl'), breakEl = $('breakEl');
 const queueHint = $('queueHint');
 $('curLabel').textContent = (CURRENCY || '') + 'Total';
 
-let state = { categories: [], expenses: [], month: '' };
+// state.allExpenses caches every row across months for the Analyse tab.
+// state.expenses (server-side filtered) is reused for the current-month views.
+let state = { categories: [], expenses: [], allExpenses: [], month: '' };
+let charts = { donut:null, catBar:null, line:null, monthBar:null };
+let analyseSel = { year: null, months: new Set() };
 
 function currentMonth() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 }
-monthInp.value = currentMonth();
-state.month = monthInp.value;
+function parseMonth(m) { const [y,mo] = m.split('-').map(Number); return {y, mo}; }
+function fmtMonth(m) { const {y,mo} = parseMonth(m); return MONTH_LONG[mo-1] + ' ' + y; }
+function shiftMonth(m, delta) {
+  let {y,mo} = parseMonth(m);
+  mo += delta;
+  while (mo < 1)  { mo += 12; y -= 1; }
+  while (mo > 12) { mo -= 12; y += 1; }
+  return y + '-' + String(mo).padStart(2,'0');
+}
+function money(v) { return (CURRENCY||'') + (Number(v)||0).toFixed(2); }
+
+state.month = currentMonth();
+monthLabel.textContent = fmtMonth(state.month);
+
+$('prevMonth').onclick = () => { state.month = shiftMonth(state.month, -1); monthLabel.textContent = fmtMonth(state.month); refresh(); };
+$('nextMonth').onclick = () => { state.month = shiftMonth(state.month, +1); monthLabel.textContent = fmtMonth(state.month); refresh(); };
 
 // ---- Tabs ----
-const panes = { Add:['tabAdd','paneAdd'], List:['tabList','paneList'], Break:['tabBreak','paneBreak'] };
+const panes = {
+  Add:    ['tabAdd','paneAdd'],
+  List:   ['tabList','paneList'],
+  Break:  ['tabBreak','paneBreak'],
+  Analyse:['tabAnalyse','paneAnalyse']
+};
 Object.entries(panes).forEach(([k,[tabId,paneId]])=>{
   $(tabId).onclick = () => {
     Object.values(panes).forEach(([t,p])=>{ $(t).classList.remove('active'); $(p).hidden = true; });
     $(tabId).classList.add('active'); $(paneId).hidden = false;
     if (k === 'List') renderList();
     if (k === 'Break') renderBreak();
+    if (k === 'Analyse') openAnalyse();
   };
 });
 
 // ---- Network helpers ----
 async function api(path, opts) {
-  const url = API_URL + path;
-  const res = await fetch(url, opts);
+  const res = await fetch(API_URL + path, opts);
   return res.json();
 }
-
 function setStatus(t, cls) {
   statusLine.textContent = t;
   statusLine.className = 'sub ' + (cls||'');
+}
+
+// ---- Toast ----
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 1800);
 }
 
 // ---- Offline queue ----
@@ -163,30 +269,38 @@ function updateQueueHint() {
   const n = getQueue().length;
   queueHint.textContent = n ? (n + ' entr' + (n===1?'y':'ies') + ' queued — will sync when online.') : '';
 }
-
 async function flushQueue() {
   const q = getQueue();
   if (!q.length || !navigator.onLine) return;
   try {
     const r = await api('', { method:'POST', body: JSON.stringify({ type:'addExpense', items: q }) });
-    if (r.ok) { setQueue([]); await refresh(); }
-  } catch(e) { /* stay queued */ }
+    if (r.ok) { setQueue([]); await refresh(true); }
+  } catch(e) {}
 }
-
 window.addEventListener('online', () => { setStatus('Online — syncing…','ok'); flushQueue().then(()=>setStatus('Online','ok')); });
 window.addEventListener('offline', () => setStatus('Offline — entries will queue'));
 
-// ---- Load categories + expenses ----
-async function refresh() {
-  state.month = monthInp.value;
+// ---- Refresh ----
+// withAll=true fetches every row (used on first load, after sync, after add).
+async function refresh(withAll) {
   try {
-    const data = await api('?month=' + encodeURIComponent(state.month));
-    state.categories = data.categories || [];
-    state.expenses = data.expenses || [];
+    if (withAll || !state.allExpenses.length) {
+      const all = await api('');
+      state.categories = all.categories || [];
+      state.allExpenses = all.expenses || [];
+    } else {
+      const data = await api('?month=' + encodeURIComponent(state.month));
+      state.categories = data.categories || state.categories;
+      state.expenses = data.expenses || [];
+    }
+    if (withAll || !state.expenses.length || state.expenses[0]?.month !== state.month) {
+      state.expenses = state.allExpenses.filter(e => e.month === state.month);
+    }
     renderCategories();
     renderTotal();
     renderList();
     renderBreak();
+    if (!$('paneAnalyse').hidden) openAnalyse();
     setStatus(navigator.onLine ? 'Online' : 'Offline', navigator.onLine ? 'ok' : '');
   } catch(e) {
     setStatus('Offline — showing cached');
@@ -212,8 +326,8 @@ function monthExpenses() {
 function renderTotal() {
   const items = monthExpenses();
   const sum = items.reduce((a,b)=>a + (Number(b.amount)||0), 0);
-  totalAmt.textContent = (CURRENCY||'') + sum.toFixed(2);
-  countLine.textContent = items.length + ' entr' + (items.length===1?'y':'ies') + ' in ' + state.month;
+  totalAmt.textContent = money(sum);
+  countLine.textContent = items.length + ' entr' + (items.length===1?'y':'ies') + ' in ' + fmtMonth(state.month);
 }
 
 function renderList() {
@@ -228,7 +342,7 @@ function renderList() {
         <span class="cat">${escapeHtml(it.category)}${it._queued?'<span class="pill">queued</span>':''}</span>
         <span class="note">${escapeHtml(it.note||'')}</span>
       </div>
-      <div class="amt">${(CURRENCY||'') + (Number(it.amount)||0).toFixed(2)}</div>
+      <div class="amt">${money(it.amount)}</div>
     `;
     listEl.appendChild(row);
   });
@@ -244,7 +358,7 @@ function renderBreak() {
   rows.forEach(([c,v]) => {
     const r = document.createElement('div');
     r.className = 'row2';
-    r.innerHTML = `<span>${escapeHtml(c)}</span><span>${(CURRENCY||'')+v.toFixed(2)}</span>`;
+    r.innerHTML = `<span>${escapeHtml(c)}</span><span>${money(v)}</span>`;
     breakEl.appendChild(r);
   });
 }
@@ -257,20 +371,29 @@ $('addBtn').onclick = async () => {
   const category = categorySel.value;
   const note = noteInp.value.trim();
   if (!category || !amount || amount <= 0) { amountInp.focus(); return; }
-  const item = { month: monthInp.value, category, amount, note };
+  const item = { month: state.month, category, amount, note };
   amountInp.value = ''; noteInp.value = '';
 
   if (!navigator.onLine) {
     const q = getQueue(); q.push(item); setQueue(q);
     renderTotal(); renderList(); renderBreak();
+    toast('Queued — will sync when online');
     return;
   }
   try {
     const r = await api('', { method:'POST', body: JSON.stringify({ type:'addExpense', items:[item] }) });
-    if (r.ok) await refresh();
+    if (r.ok) {
+      // Optimistic local insert so the total is instantly visible even before refetch
+      state.allExpenses.push({ ts:new Date().toISOString(), ...item });
+      state.expenses.push(item);
+      renderTotal(); renderList(); renderBreak();
+      toast('Added: ' + money(amount));
+      refresh(true);
+    }
   } catch(e) {
     const q = getQueue(); q.push(item); setQueue(q);
     renderTotal(); renderList(); renderBreak();
+    toast('Saved offline');
   }
 };
 
@@ -288,9 +411,150 @@ $('newCatSave').onclick = async () => {
   } catch(e) { alert('Need internet to add a category.'); }
 };
 
-monthInp.onchange = refresh;
+// ============ ANALYSE TAB ============
+function availableYears() {
+  const set = new Set(state.allExpenses.map(e => parseMonth(e.month).y));
+  if (!set.size) set.add(parseMonth(state.month).y);
+  return [...set].sort((a,b)=>b-a);
+}
+function monthsWithData(year) {
+  const set = new Set();
+  state.allExpenses.forEach(e => { const {y,mo} = parseMonth(e.month); if (y===year) set.add(mo); });
+  return set;
+}
+
+function openAnalyse() {
+  const years = availableYears();
+  if (!analyseSel.year || !years.includes(analyseSel.year)) analyseSel.year = years[0];
+
+  const ySel = $('yearSel');
+  ySel.innerHTML = '';
+  years.forEach(y => {
+    const o = document.createElement('option'); o.value = y; o.textContent = y;
+    if (y === analyseSel.year) o.selected = true;
+    ySel.appendChild(o);
+  });
+  ySel.onchange = () => { analyseSel.year = Number(ySel.value); buildMonthGrid(true); renderAnalyse(); };
+
+  buildMonthGrid(analyseSel.months.size === 0);
+  renderAnalyse();
+}
+
+function buildMonthGrid(autoSelectAll) {
+  const grid = $('monthGrid');
+  grid.innerHTML = '';
+  const present = monthsWithData(analyseSel.year);
+  if (autoSelectAll) { analyseSel.months = new Set(present); }
+
+  for (let mo = 1; mo <= 12; mo++) {
+    const has = present.has(mo);
+    const lab = document.createElement('label');
+    if (!has) lab.classList.add('disabled');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = mo;
+    cb.checked = analyseSel.months.has(mo);
+    cb.disabled = !has;
+    cb.onchange = () => {
+      if (cb.checked) analyseSel.months.add(mo); else analyseSel.months.delete(mo);
+      renderAnalyse();
+    };
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(' ' + MONTH_NAMES[mo-1]));
+    grid.appendChild(lab);
+  }
+}
+
+$('selAllMonths').onclick = () => {
+  const present = monthsWithData(analyseSel.year);
+  analyseSel.months = new Set(present);
+  buildMonthGrid(false); renderAnalyse();
+};
+$('clearMonths').onclick = () => {
+  analyseSel.months.clear();
+  buildMonthGrid(false); renderAnalyse();
+};
+
+function selectedExpenses() {
+  const y = analyseSel.year;
+  return state.allExpenses.filter(e => {
+    const {y:ey, mo} = parseMonth(e.month);
+    return ey === y && analyseSel.months.has(mo);
+  });
+}
+
+function paletteFor(n) {
+  const base = ['#0b8457','#0ea5e9','#f97316','#a855f7','#ef4444','#eab308','#14b8a6','#ec4899','#6366f1','#84cc16','#f59e0b','#06b6d4','#8b5cf6','#10b981','#f43f5e','#3b82f6'];
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(base[i % base.length]);
+  return out;
+}
+
+function renderAnalyse() {
+  const items = selectedExpenses();
+  const sum = items.reduce((a,b)=>a + (Number(b.amount)||0), 0);
+  $('anaTotal').textContent = money(sum);
+  $('anaCount').textContent = items.length + ' entr' + (items.length===1?'y':'ies') + ' in ' + (analyseSel.months.size) + ' month(s)';
+
+  // by category
+  const byCat = {};
+  items.forEach(it => { byCat[it.category] = (byCat[it.category]||0) + (Number(it.amount)||0); });
+  const catRows = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const catLabels = catRows.map(r=>r[0]);
+  const catVals   = catRows.map(r=>r[1]);
+  const catColors = paletteFor(catLabels.length);
+
+  // by month (always show all 12 of selected year for context)
+  const byMonth = {};
+  for (let mo = 1; mo <= 12; mo++) byMonth[mo] = 0;
+  state.allExpenses.forEach(e => { const {y,mo} = parseMonth(e.month); if (y === analyseSel.year) byMonth[mo] += Number(e.amount)||0; });
+  const monthLabels = MONTH_NAMES;
+  const monthVals = MONTH_NAMES.map((_,i)=>byMonth[i+1]);
+  const monthColors = MONTH_NAMES.map((_,i)=>analyseSel.months.has(i+1) ? '#0b8457' : '#cbd5e1');
+
+  drawDonut(catLabels, catVals, catColors);
+  drawCatBar(catLabels, catVals, catColors);
+  drawLine(monthLabels, monthVals);
+  drawMonthBar(monthLabels, monthVals, monthColors);
+}
+
+function destroyChart(key) { if (charts[key]) { charts[key].destroy(); charts[key] = null; } }
+
+function drawDonut(labels, data, colors) {
+  destroyChart('donut');
+  charts.donut = new Chart($('chartDonut'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ boxWidth:12, font:{ size:11 } } } } }
+  });
+}
+function drawCatBar(labels, data, colors) {
+  destroyChart('catBar');
+  charts.catBar = new Chart($('chartCatBar'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true } } }
+  });
+}
+function drawLine(labels, data) {
+  destroyChart('line');
+  charts.line = new Chart($('chartLine'), {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor:'#0b8457', backgroundColor:'rgba(11,132,87,.15)', tension:.3, fill:true, pointRadius:3 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+function drawMonthBar(labels, data, colors) {
+  destroyChart('monthBar');
+  charts.monthBar = new Chart($('chartMonthBar'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+// ---- Boot ----
 updateQueueHint();
-refresh();
+refresh(true);
 setInterval(flushQueue, 30000);
 
 // ---- Service worker ----

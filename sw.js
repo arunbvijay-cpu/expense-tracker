@@ -2,11 +2,16 @@
 // Expense data itself is fetched live from Apps Script — when offline,
 // the page falls back to its in-memory state + queued entries in localStorage.
 
-const CACHE = 'expense-tracker-v1';
-const SHELL = ['./', './index.html', './manifest.json'];
+const CACHE = 'expense-tracker-v3';
+const SHELL = ['./', './index.html', './manifest.json', './bg.jpg'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(()=>self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      // Don't fail install if bg.jpg is missing yet.
+      Promise.all(SHELL.map(u => c.add(u).catch(()=>{})))
+    ).then(()=>self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -23,7 +28,6 @@ self.addEventListener('fetch', e => {
   // Never cache Apps Script API calls
   if (url.hostname.endsWith('script.google.com')) return;
 
-  // App shell: cache-first
   if (req.method === 'GET' && url.origin === self.location.origin) {
     e.respondWith(
       caches.match(req).then(hit => hit || fetch(req).then(res => {
