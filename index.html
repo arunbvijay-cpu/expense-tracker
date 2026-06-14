@@ -27,11 +27,14 @@
   body::before {
     content:''; position:fixed; inset:0; z-index:-2;
     background-image:url('bg.jpg');
-    background-size:cover; background-position:center top; background-repeat:no-repeat;
+    background-size:cover;
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-color:#ece4d4;
   }
   body::after {
     content:''; position:fixed; inset:0; z-index:-1;
-    background:linear-gradient(180deg, rgba(245,239,228,.55) 0%, rgba(245,239,228,.82) 60%, rgba(245,239,228,.92) 100%);
+    background:linear-gradient(180deg, rgba(245,239,228,.25) 0%, rgba(245,239,228,.15) 40%, rgba(245,239,228,.35) 100%);
   }
   header { background:var(--brand-soft); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--brand-ink); padding:14px 16px; position:sticky; top:0; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,.08); }
   header h1 { margin:0; font-size:18px; font-weight:600; letter-spacing:.2px; }
@@ -52,15 +55,18 @@
   .monthSwitch { display:flex; align-items:center; gap:8px; }
   .monthSwitch button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); width:38px; height:38px; padding:0; font-size:18px; font-weight:600; border-radius:10px; flex:0 0 auto; }
   .monthSwitch .lbl { flex:1; text-align:center; font-weight:600; font-size:16px; }
-  .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-  .tabs button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); padding:8px 12px; font-weight:500; width:auto; font-size:13px; }
+  .tabs { display:flex; gap:4px; margin-bottom:10px; }
+  .tabs button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); padding:7px 6px; font-weight:500; width:auto; font-size:12px; flex:1; min-width:0; }
   .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
   .list { display:flex; flex-direction:column; gap:8px; }
-  .item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--card-solid); border:1px solid var(--line); border-radius:10px; }
-  .item .l { display:flex; flex-direction:column; }
+  .item { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:var(--card-solid); border:1px solid var(--line); border-radius:10px; }
+  .item .l { display:flex; flex-direction:column; flex:1; min-width:0; }
   .item .cat { font-weight:600; font-size:14px; }
-  .item .note { font-size:12px; color:var(--muted); }
-  .item .amt { font-weight:600; }
+  .item .note { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .item .amt { font-weight:600; white-space:nowrap; }
+  .item .editBtn { background:transparent; border:1px solid var(--line); color:var(--muted); width:34px; height:34px; padding:0; border-radius:8px; font-size:15px; flex:0 0 auto; }
+  .item .editBtn:hover { background:var(--card-solid); color:var(--ink); }
+  button.danger { background:#b03a2e; color:#fff; }
   .bycat { display:flex; flex-direction:column; gap:6px; }
   .bycat .row2 { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
   .bycat .row2:last-child { border-bottom:0; }
@@ -178,6 +184,29 @@
   <div style="display:flex; gap:8px; margin-top:12px;">
     <button class="secondary" id="newCatCancel" type="button">Cancel</button>
     <button id="newCatSave" type="button">Save</button>
+  </div>
+</dialog>
+
+<dialog id="editDlg">
+  <h3 style="margin:0 0 10px;">Edit expense</h3>
+  <label>Month</label>
+  <div class="monthSwitch" style="margin-bottom:10px;">
+    <button id="editPrevMonth" type="button">◀</button>
+    <div class="lbl" id="editMonthLbl">—</div>
+    <button id="editNextMonth" type="button">▶</button>
+  </div>
+  <label>Category</label>
+  <select id="editCategory"></select>
+  <div style="height:10px;"></div>
+  <label>Amount</label>
+  <input type="number" id="editAmount" inputmode="decimal" step="0.01">
+  <div style="height:10px;"></div>
+  <label>Note</label>
+  <input type="text" id="editNote">
+  <div style="display:flex; gap:8px; margin-top:14px;">
+    <button class="danger" id="editDelete" type="button">Delete</button>
+    <button class="secondary" id="editCancel" type="button">Cancel</button>
+    <button id="editSave" type="button">Save</button>
   </div>
 </dialog>
 
@@ -343,7 +372,16 @@ function renderList() {
         <span class="note">${escapeHtml(it.note||'')}</span>
       </div>
       <div class="amt">${money(it.amount)}</div>
+      <button class="editBtn" type="button" title="Edit">✎</button>
     `;
+    const btn = row.querySelector('.editBtn');
+    if (it._queued || !it.ts) {
+      btn.disabled = true;
+      btn.style.opacity = '.35';
+      btn.title = 'Cannot edit until synced';
+    } else {
+      btn.onclick = () => openEdit(it);
+    }
     listEl.appendChild(row);
   });
 }
@@ -409,6 +447,77 @@ $('newCatSave').onclick = async () => {
     const r = await api('', { method:'POST', body: JSON.stringify({ type:'addCategory', name }) });
     if (r.ok) { state.categories = r.categories; renderCategories(); categorySel.value = name; }
   } catch(e) { alert('Need internet to add a category.'); }
+};
+
+// ============ EDIT / DELETE ============
+const editDlg = $('editDlg');
+let editing = null; // current item being edited
+
+function openEdit(item) {
+  editing = { ...item };
+  // populate categories dropdown (include the current category even if it's not in the list)
+  const sel = $('editCategory');
+  sel.innerHTML = '';
+  const cats = state.categories.includes(item.category) ? state.categories : [item.category, ...state.categories];
+  cats.forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c;
+    if (c === item.category) o.selected = true;
+    sel.appendChild(o);
+  });
+  $('editAmount').value = item.amount;
+  $('editNote').value = item.note || '';
+  $('editMonthLbl').textContent = fmtMonth(item.month);
+  editDlg._month = item.month;
+  editDlg.showModal();
+}
+
+$('editPrevMonth').onclick = () => { editDlg._month = shiftMonth(editDlg._month, -1); $('editMonthLbl').textContent = fmtMonth(editDlg._month); };
+$('editNextMonth').onclick = () => { editDlg._month = shiftMonth(editDlg._month, +1); $('editMonthLbl').textContent = fmtMonth(editDlg._month); };
+$('editCancel').onclick = () => editDlg.close();
+
+$('editSave').onclick = async () => {
+  if (!editing) return;
+  const amount = parseFloat($('editAmount').value);
+  const category = $('editCategory').value;
+  const note = $('editNote').value.trim();
+  const month = editDlg._month;
+  if (!category || !(amount > 0)) { $('editAmount').focus(); return; }
+  editDlg.close();
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({
+      type:'updateExpense', id: editing.ts, month, category, amount, note
+    })});
+    if (r.ok) {
+      // patch local cache
+      const patch = e => { if (e.ts === editing.ts) { e.month = month; e.category = category; e.amount = amount; e.note = note; } };
+      state.allExpenses.forEach(patch);
+      state.expenses.forEach(patch);
+      renderTotal(); renderList(); renderBreak();
+      if (!$('paneAnalyse').hidden) openAnalyse();
+      toast('Updated');
+      refresh(true);
+    } else { toast('Update failed'); }
+  } catch(e) { toast('Need internet to edit'); }
+  editing = null;
+};
+
+$('editDelete').onclick = async () => {
+  if (!editing) return;
+  if (!confirm('Delete this expense?')) return;
+  const id = editing.ts;
+  editDlg.close();
+  try {
+    const r = await api('', { method:'POST', body: JSON.stringify({ type:'deleteExpense', id })});
+    if (r.ok) {
+      state.allExpenses = state.allExpenses.filter(e => e.ts !== id);
+      state.expenses    = state.expenses.filter(e => e.ts !== id);
+      renderTotal(); renderList(); renderBreak();
+      if (!$('paneAnalyse').hidden) openAnalyse();
+      toast('Deleted');
+      refresh(true);
+    } else { toast('Delete failed'); }
+  } catch(e) { toast('Need internet to delete'); }
+  editing = null;
 };
 
 // ============ ANALYSE TAB ============
