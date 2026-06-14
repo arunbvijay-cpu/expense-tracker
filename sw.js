@@ -2,8 +2,8 @@
 // Expense data itself is fetched live from Apps Script — when offline,
 // the page falls back to its in-memory state + queued entries in localStorage.
 
-const CACHE = 'expense-tracker-v5';
-const SHELL = ['./', './index.html', './manifest.json', './bg.jpg'];
+const CACHE = 'expense-tracker-v7';
+const SHELL = ['./', './index.html', './manifest.json', './bg.jpg', './icon-192.jpg', './icon-512.jpg', './icon-180.jpg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
