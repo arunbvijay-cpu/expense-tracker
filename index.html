@@ -11,37 +11,34 @@
 <style>
   :root {
     --bg-fallback:#ece4d4;
-    --card:rgba(255,251,243,.94);
-    --card-solid:#fffaf2;
-    --ink:#2c2620;
-    --muted:#7a6f60;
+    --card:rgba(255,251,243,.01);
+    --card-solid:rgba(255,251,243,.90);
+    --ink:#1a1611;
+    --muted:#3f372e;
     --brand:#5d6e63;
-    --brand-soft:rgba(93,110,99,.92);
+    --brand-soft:rgba(93,110,99,.75);
     --brand-ink:#fff;
-    --line:rgba(60,45,30,.18);
-    --warn:#b8721c;
+    --line:rgba(40,30,18,.25);
+    --warn:#9a5a14;
   }
   * { box-sizing:border-box; }
   html,body { margin:0; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
-  body { background:var(--bg-fallback); position:relative; min-height:100vh; }
+  body { background:transparent; position:relative; min-height:100vh; }
   body::before {
     content:''; position:fixed; inset:0; z-index:-2;
     background-image:url('bg.jpg');
     background-size:cover;
-    background-position:center center;
+    background-position:calc(50% - 0.2cm) center;
     background-repeat:no-repeat;
-    background-color:#ece4d4;
   }
-  body::after {
-    content:''; position:fixed; inset:0; z-index:-1;
-    background:linear-gradient(180deg, rgba(245,239,228,.25) 0%, rgba(245,239,228,.15) 40%, rgba(245,239,228,.35) 100%);
-  }
-  header { background:var(--brand-soft); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--brand-ink); padding:14px 16px; position:sticky; top:0; z-index:10; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-  header h1 { margin:0; font-size:18px; font-weight:600; letter-spacing:.2px; }
-  header .sub { font-size:12px; opacity:.9; margin-top:2px; }
+  body::after { content:none; }
+  header { background:rgba(93,110,99,.10); color:#fff; padding:14px 16px; position:sticky; top:0; z-index:10; text-shadow:0 1px 3px rgba(0,0,0,.7); }
+  header h1 { margin:0; font-size:18px; font-weight:700; letter-spacing:.2px; }
+  header .sub { font-size:12px; opacity:.95; margin-top:2px; }
   main { padding:14px; padding-bottom:90px; max-width:560px; margin:0 auto; }
-  .card { background:var(--card); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.5); border-radius:14px; padding:14px; box-shadow:0 2px 10px rgba(60,45,30,.08); margin-bottom:14px; }
-  .stickyCard { position:sticky; top:60px; z-index:9; }
+  .card { background:var(--card); border-radius:14px; padding:14px; margin-bottom:14px; }
+  .stickyCard { position:sticky; top:60px; z-index:9; background:rgba(255,251,243,.25); border-radius:14px; padding:10px 14px; max-width:340px; margin:0.5cm auto 14px; }
+  .stickyCard .total { font-size:24px; }
   label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
   input, select, button, textarea { font:inherit; }
   input, select, textarea { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card-solid); color:var(--ink); }
@@ -54,7 +51,7 @@
   .total .cur { font-size:14px; color:var(--muted); font-weight:500; margin-right:4px; }
   .monthSwitch { display:flex; align-items:center; gap:8px; }
   .monthSwitch button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); width:38px; height:38px; padding:0; font-size:18px; font-weight:600; border-radius:10px; flex:0 0 auto; }
-  .monthSwitch .lbl { flex:1; text-align:center; font-weight:600; font-size:16px; }
+  .monthSwitch .lbl { flex:1; text-align:center; font-weight:700; font-size:22px; white-space:nowrap; overflow:hidden; line-height:1.15; padding:0 4px; }
   .tabs { display:flex; gap:4px; margin-bottom:10px; }
   .tabs button { background:var(--card-solid); color:var(--ink); border:1px solid var(--line); padding:7px 6px; font-weight:500; width:auto; font-size:12px; flex:1; min-width:0; }
   .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
@@ -67,14 +64,14 @@
   .item .editBtn { background:transparent; border:1px solid var(--line); color:var(--muted); width:34px; height:34px; padding:0; border-radius:8px; font-size:15px; flex:0 0 auto; }
   .item .editBtn:hover { background:var(--card-solid); color:var(--ink); }
   button.danger { background:#b03a2e; color:#fff; }
-  .bycat { display:flex; flex-direction:column; gap:6px; }
-  .bycat .row2 { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .bycat .row2:last-child { border-bottom:0; }
+  .bycat { display:flex; flex-direction:column; gap:8px; }
+  .bycat .row2 { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 12px; background:var(--card-solid); border:1px solid var(--line); border-radius:10px; font-size:14px; font-weight:500; }
+  .bycat .row2 .amt { font-weight:600; white-space:nowrap; }
   .pill { display:inline-block; padding:3px 8px; border-radius:999px; background:#fef3c7; color:var(--warn); font-size:11px; margin-left:6px; }
   .ok { color:var(--brand); }
   .muted { color:var(--muted); font-size:12px; }
-  dialog { border:0; border-radius:14px; padding:18px; width:90%; max-width:380px; }
-  dialog::backdrop { background:rgba(0,0,0,.4); }
+  dialog { border:0; border-radius:14px; padding:18px; width:90%; max-width:380px; background:rgba(255,251,243,.50); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:var(--ink); box-shadow:0 8px 32px rgba(0,0,0,.25); }
+  dialog::backdrop { background:rgba(0,0,0,.35); }
   .hint { font-size:12px; color:var(--muted); margin-top:6px; }
   .monthGrid { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; margin-top:8px; }
   .monthGrid label { display:flex; align-items:center; gap:6px; padding:8px 10px; background:var(--card-solid); border:1px solid var(--line); border-radius:8px; margin:0; cursor:pointer; font-size:13px; color:var(--ink); }
@@ -165,10 +162,6 @@
         <div class="chartWrap"><canvas id="chartCatBar"></canvas></div>
       </div>
       <div class="chartBox">
-        <h4>Monthly total (line)</h4>
-        <div class="chartWrap"><canvas id="chartLine"></canvas></div>
-      </div>
-      <div class="chartBox">
         <h4>Monthly total (bar)</h4>
         <div class="chartWrap"><canvas id="chartMonthBar"></canvas></div>
       </div>
@@ -234,7 +227,7 @@ $('curLabel').textContent = (CURRENCY || '') + 'Total';
 // state.allExpenses caches every row across months for the Analyse tab.
 // state.expenses (server-side filtered) is reused for the current-month views.
 let state = { categories: [], expenses: [], allExpenses: [], month: '' };
-let charts = { donut:null, catBar:null, line:null, monthBar:null };
+let charts = { donut:null, catBar:null, monthBar:null };
 let analyseSel = { year: null, months: new Set() };
 
 function currentMonth() {
@@ -252,11 +245,17 @@ function shiftMonth(m, delta) {
 }
 function money(v) { return (CURRENCY||'') + (Number(v)||0).toFixed(2); }
 
-state.month = currentMonth();
+state.month = localStorage.getItem('lastMonth') || currentMonth();
 monthLabel.textContent = fmtMonth(state.month);
 
-$('prevMonth').onclick = () => { state.month = shiftMonth(state.month, -1); monthLabel.textContent = fmtMonth(state.month); refresh(); };
-$('nextMonth').onclick = () => { state.month = shiftMonth(state.month, +1); monthLabel.textContent = fmtMonth(state.month); refresh(); };
+function setMonth(m) {
+  state.month = m;
+  monthLabel.textContent = fmtMonth(m);
+  try { localStorage.setItem('lastMonth', m); } catch (e) {}
+}
+
+$('prevMonth').onclick = () => { setMonth(shiftMonth(state.month, -1)); refresh(); };
+$('nextMonth').onclick = () => { setMonth(shiftMonth(state.month, +1)); refresh(); };
 
 // ---- Tabs ----
 const panes = {
@@ -269,9 +268,17 @@ Object.entries(panes).forEach(([k,[tabId,paneId]])=>{
   $(tabId).onclick = () => {
     Object.values(panes).forEach(([t,p])=>{ $(t).classList.remove('active'); $(p).hidden = true; });
     $(tabId).classList.add('active'); $(paneId).hidden = false;
-    if (k === 'List') renderList();
-    if (k === 'Break') renderBreak();
-    if (k === 'Analyse') openAnalyse();
+    const onAnalyse = (k === 'Analyse');
+    $('prevMonth').style.visibility = onAnalyse ? 'hidden' : 'visible';
+    $('nextMonth').style.visibility = onAnalyse ? 'hidden' : 'visible';
+    if (onAnalyse) { openAnalyse(); }
+    else {
+      monthLabel.style.fontSize = '22px';
+      monthLabel.textContent = fmtMonth(state.month);
+      renderTotal();
+      if (k === 'List') renderList();
+      if (k === 'Break') renderBreak();
+    }
   };
 });
 
@@ -337,7 +344,7 @@ async function refresh(withAll) {
 }
 
 function renderCategories() {
-  const cur = categorySel.value;
+  const cur = categorySel.value || localStorage.getItem('lastCategory') || '';
   categorySel.innerHTML = '';
   state.categories.forEach(c => {
     const o = document.createElement('option');
@@ -346,6 +353,7 @@ function renderCategories() {
   });
   if (cur && state.categories.includes(cur)) categorySel.value = cur;
 }
+categorySel.onchange = () => { try { localStorage.setItem('lastCategory', categorySel.value); } catch(e) {} };
 
 function monthExpenses() {
   const q = getQueue().filter(x => x.month === state.month);
@@ -396,7 +404,7 @@ function renderBreak() {
   rows.forEach(([c,v]) => {
     const r = document.createElement('div');
     r.className = 'row2';
-    r.innerHTML = `<span>${escapeHtml(c)}</span><span>${money(v)}</span>`;
+    r.innerHTML = `<span>${escapeHtml(c)}</span><span class="amt">${money(v)}</span>`;
     breakEl.appendChild(r);
   });
 }
@@ -408,7 +416,14 @@ $('addBtn').onclick = async () => {
   const amount = parseFloat(amountInp.value);
   const category = categorySel.value;
   const note = noteInp.value.trim();
-  if (!category || !amount || amount <= 0) { amountInp.focus(); return; }
+  if (!amount || amount <= 0) {
+    toast('Enter an amount greater than 0');
+    amountInp.focus();
+    amountInp.style.borderColor = '#b03a2e';
+    amountInp.style.background = 'rgba(176,58,46,.10)';
+    setTimeout(() => { amountInp.style.borderColor = ''; amountInp.style.background = ''; }, 1500);
+    return;
+  }
   const item = { month: state.month, category, amount, note };
   amountInp.value = ''; noteInp.value = '';
 
@@ -598,11 +613,39 @@ function paletteFor(n) {
   return out;
 }
 
+function fitMonthLabel() {
+  // shrink the sticky-card month label so multi-month text always fits on one line
+  monthLabel.style.fontSize = '22px';
+  const cap = monthLabel.clientWidth;
+  if (!cap) return;
+  let size = 22;
+  while (monthLabel.scrollWidth > cap && size > 10) {
+    size -= 1;
+    monthLabel.style.fontSize = size + 'px';
+  }
+}
+
+function formatAnalyseLabel() {
+  const months = [...analyseSel.months].sort((a,b)=>a-b);
+  const year = analyseSel.year;
+  if (!months.length) return 'No months · ' + year;
+  if (months.length === 12) return 'Year ' + year;
+  if (months.length === 1) return MONTH_LONG[months[0]-1] + ' ' + year;
+  return months.map(m => MONTH_NAMES[m-1]).join(', ') + ' ' + year;
+}
+
 function renderAnalyse() {
   const items = selectedExpenses();
   const sum = items.reduce((a,b)=>a + (Number(b.amount)||0), 0);
   $('anaTotal').textContent = money(sum);
   $('anaCount').textContent = items.length + ' entr' + (items.length===1?'y':'ies') + ' in ' + (analyseSel.months.size) + ' month(s)';
+  // mirror to the sticky top header while Analyse is open
+  if (!$('paneAnalyse').hidden) {
+    monthLabel.textContent = formatAnalyseLabel();
+    totalAmt.textContent = money(sum);
+    countLine.textContent = items.length + ' entr' + (items.length===1?'y':'ies');
+    fitMonthLabel();
+  }
 
   // by category
   const byCat = {};
@@ -622,7 +665,6 @@ function renderAnalyse() {
 
   drawDonut(catLabels, catVals, catColors);
   drawCatBar(catLabels, catVals, catColors);
-  drawLine(monthLabels, monthVals);
   drawMonthBar(monthLabels, monthVals, monthColors);
 }
 
@@ -641,15 +683,31 @@ function drawCatBar(labels, data, colors) {
   charts.catBar = new Chart($('chartCatBar'), {
     type: 'bar',
     data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ x:{ beginAtZero:true } } }
-  });
-}
-function drawLine(labels, data) {
-  destroyChart('line');
-  charts.line = new Chart($('chartLine'), {
-    type: 'line',
-    data: { labels, datasets: [{ data, borderColor:'#0b8457', backgroundColor:'rgba(11,132,87,.15)', tension:.3, fill:true, pointRadius:3 }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+    options: {
+      indexAxis:'y',
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{ padding:{ right:60 } },
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ beginAtZero:true } }
+    },
+    plugins: [{
+      id: 'catBarValues',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data) return;
+        ctx.save();
+        ctx.font = '600 10px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        ctx.fillStyle = '#1a1611';
+        ctx.textBaseline = 'middle';
+        meta.data.forEach((bar, i) => {
+          const v = chart.data.datasets[0].data[i];
+          ctx.fillText(money(v), bar.x + 4, bar.y);
+        });
+        ctx.restore();
+      }
+    }]
   });
 }
 function drawMonthBar(labels, data, colors) {
@@ -657,7 +715,35 @@ function drawMonthBar(labels, data, colors) {
   charts.monthBar = new Chart($('chartMonthBar'), {
     type: 'bar',
     data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0 }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } }
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } },
+    plugins: [{
+      id: 'monthBarValues',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data) return;
+        ctx.save();
+        ctx.font = '600 9px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        meta.data.forEach((bar, i) => {
+          const v = chart.data.datasets[0].data[i];
+          if (!v) return;
+          const barTop = bar.y;
+          const barBot = bar.base;
+          const barH = Math.abs(barBot - barTop);
+          if (barH < 20) return; // too short to fit text
+          const cx = bar.x;
+          const cy = (barTop + barBot) / 2;
+          ctx.translate(cx, cy);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillText(money(v), 0, 0);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+        });
+        ctx.restore();
+      }
+    }]
   });
 }
 
