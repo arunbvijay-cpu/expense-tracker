@@ -83,6 +83,15 @@
   .chartBox { background:var(--card-solid); border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:10px; }
   .chartBox h4 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; }
   .chartWrap { position:relative; height:260px; }
+  .tblBox { background:var(--card-solid); border:1px solid var(--line); border-radius:10px; padding:10px; margin-top:10px; }
+  .tblBox h4 { margin:0 0 8px; font-size:13px; color:var(--muted); font-weight:600; }
+  .tblScroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table.mt { border-collapse:collapse; font-size:12px; white-space:nowrap; min-width:100%; }
+  table.mt th, table.mt td { padding:6px 8px; text-align:right; border-bottom:1px solid var(--line); background:var(--card-solid); }
+  table.mt th { background:#87cefa; color:#1a1611; font-weight:700; text-align:center; }
+  table.mt th:first-child, table.mt td:first-child { text-align:left; position:sticky; left:0; z-index:1; font-weight:600; }
+  table.mt td.tot, table.mt th.tot { font-weight:700; }
+  table.mt tr.sum td { background:#fff2cc; font-weight:700; }
   .toast { position:fixed; left:50%; bottom:80px; transform:translateX(-50%); background:#1a1d22; color:#fff; padding:10px 16px; border-radius:8px; font-size:13px; z-index:20; opacity:0; transition:opacity .2s; pointer-events:none; }
   .toast.show { opacity:1; }
 </style>
@@ -154,6 +163,11 @@
       <div style="margin-top:14px;" class="total"><span class="cur">Selected total</span><br><span id="anaTotal">0</span></div>
       <div class="muted" id="anaCount">0 entries</div>
 
+      <div class="tblBox">
+        <h4>Month-wise by category</h4>
+        <div class="tblScroll"><table class="mt" id="monthTable"></table></div>
+        <div class="miniRow"><button id="dlXlsx" type="button">⬇ Download Excel</button></div>
+      </div>
       <div class="chartBox">
         <h4>By category (donut)</h4>
         <div class="chartWrap"><canvas id="chartDonut"></canvas></div>
@@ -210,6 +224,7 @@
 // ====== CONFIG ======
 const API_URL = "https://script.google.com/macros/s/AKfycbzubi4Xko4h_6-sKDWCm51n1KJpxUvP-ZsQzQlPBrG1csj1qmaNyazi_Ugc1ob-MT_WYQ/exec";
 const CURRENCY = "Rs. "; // optional prefix like "₹ " or "$ "
+const ADMIN_CODE = "arun2026"; // change this code to your own; only the admin phone enters it
 // ====================
 
 const $ = id => document.getElementById(id);
@@ -635,6 +650,85 @@ function formatAnalyseLabel() {
   return months.map(m => MONTH_NAMES[m-1]).join(', ') + ' ' + year;
 }
 
+function fmtInt(v) { return v ? Math.round(v).toLocaleString('en-IN') : '-'; }
+function isAdmin() { try { return localStorage.getItem('isAdmin') === '1'; } catch (e) { return false; } }
+function setAdmin(on) { try { on ? localStorage.setItem('isAdmin','1') : localStorage.removeItem('isAdmin'); } catch (e) {} if (!$('paneAnalyse').hidden) renderAnalyse(); }
+(function () {
+  const q = new URLSearchParams(location.search).get('admin');
+  if (q === ADMIN_CODE) setAdmin(true); else if (q === 'off') setAdmin(false);
+  if (q !== null) history.replaceState(null, '', location.pathname);
+  let taps = 0, t;
+  document.querySelector('header h1').addEventListener('click', () => {
+    taps++; clearTimeout(t); t = setTimeout(() => taps = 0, 2000);
+    if (taps >= 5) {
+      taps = 0;
+      if (isAdmin()) { if (confirm('Turn admin view OFF on this phone?')) { setAdmin(false); toast('Admin view off'); } }
+      else if (prompt('Admin code') === ADMIN_CODE) { setAdmin(true); toast('Admin view on'); }
+    }
+  });
+})();
+function renderMonthTable(items) {
+  document.querySelector('.tblBox').hidden = !isAdmin();
+  if (!isAdmin()) return;
+  const months = [...analyseSel.months].sort((a,b)=>a-b);
+  const tbl = $('monthTable');
+  if (!months.length || !items.length) { tbl.innerHTML = '<tr><td>No data for the selected months.</td></tr>'; return; }
+  const grid = {};   // category -> {month -> amount}
+  items.forEach(e => {
+    const mo = parseMonth(e.month).mo;
+    (grid[e.category] = grid[e.category] || {})[mo] = ((grid[e.category]||{})[mo]||0) + (Number(e.amount)||0);
+  });
+  const order = state.categories.filter(c => grid[c]);
+  Object.keys(grid).forEach(c => { if (!order.includes(c)) order.push(c); });
+  const colTot = {}; let grand = 0;
+  let h = '<tr><th>Category</th>' + months.map(m => '<th>' + MONTH_NAMES[m-1] + ' ' + analyseSel.year + '</th>').join('') + '<th class="tot">Total</th></tr>';
+  order.forEach(c => {
+    let rowTot = 0;
+    const cells = months.map(m => { const v = grid[c][m]||0; rowTot += v; colTot[m] = (colTot[m]||0) + v; return '<td>' + fmtInt(v) + '</td>'; }).join('');
+    grand += rowTot;
+    h += '<tr><td>' + escapeHtml(c) + '</td>' + cells + '<td class="tot">' + fmtInt(rowTot) + '</td></tr>';
+  });
+  h += '<tr class="sum"><td>TOTAL EXPENSES</td>' + months.map(m => '<td>' + fmtInt(colTot[m]) + '</td>').join('') + '<td class="tot">' + fmtInt(grand) + '</td></tr>';
+  tbl.innerHTML = h;
+}
+
+function loadXlsx() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    sc.onload = res; sc.onerror = () => rej(new Error('load'));
+    document.head.appendChild(sc);
+  });
+}
+$('dlXlsx').onclick = async () => {
+  if (!isAdmin()) return;
+  const items = selectedExpenses();
+  const months = [...analyseSel.months].sort((a,b)=>a-b);
+  if (!items.length || !months.length) { toast('Nothing to download'); return; }
+  try { await loadXlsx(); } catch (e) { toast('Need internet to download'); return; }
+  const grid = {};
+  items.forEach(e => { const mo = parseMonth(e.month).mo; (grid[e.category] = grid[e.category] || {})[mo] = ((grid[e.category]||{})[mo]||0) + (Number(e.amount)||0); });
+  const order = state.categories.filter(c => grid[c]);
+  Object.keys(grid).forEach(c => { if (!order.includes(c)) order.push(c); });
+  const aoa = [['Category', ...months.map(m => MONTH_NAMES[m-1] + ' ' + analyseSel.year), 'Total']];
+  const colTot = months.map(() => 0); let grand = 0;
+  order.forEach(c => {
+    let t = 0;
+    const row = months.map((m,i) => { const v = grid[c][m]||0; t += v; colTot[i] += v; return v; });
+    grand += t; aoa.push([c, ...row, t]);
+  });
+  aoa.push(['TOTAL EXPENSES', ...colTot, grand]);
+  const raw = [['Month','Category','Amount','Note']]
+    .concat(items.slice().sort((a,b)=> a.month < b.month ? -1 : a.month > b.month ? 1 : 0).map(e => [e.month, e.category, Number(e.amount)||0, e.note||'']));
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(aoa); ws1['!cols'] = [{wch:26}, ...months.map(()=>({wch:11})), {wch:12}];
+  const ws2 = XLSX.utils.aoa_to_sheet(raw); ws2['!cols'] = [{wch:10},{wch:20},{wch:12},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Monthly Summary');
+  XLSX.utils.book_append_sheet(wb, ws2, 'All Expenses');
+  XLSX.writeFile(wb, 'Expenses ' + analyseSel.year + '.xlsx');
+};
+
 function renderAnalyse() {
   const items = selectedExpenses();
   const sum = items.reduce((a,b)=>a + (Number(b.amount)||0), 0);
@@ -647,6 +741,8 @@ function renderAnalyse() {
     countLine.textContent = items.length + ' entr' + (items.length===1?'y':'ies');
     fitMonthLabel();
   }
+
+  renderMonthTable(items);
 
   // by category
   const byCat = {};
