@@ -1,0 +1,4 @@
+android-sms/.gradle/
+android-sms/build/
+android-sms/app/build/
+android-sms/local.properties
