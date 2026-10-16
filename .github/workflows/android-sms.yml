@@ -3,47 +3,16 @@ name: Build SMS Expenses app
 on:
   push:
     paths:
-      - "android-sms/**"
       - ".github/workflows/android-sms.yml"
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  remove-public-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
-
-      - name: Build APK
-        working-directory: android-sms
-        run: gradle --no-daemon :app:assembleDebug
-
-      - name: Rename APK
-        run: cp android-sms/app/build/outputs/apk/debug/app-debug.apk SMS-Expenses.apk
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: SMS-Expenses-apk
-          path: SMS-Expenses.apk
-
-      # A fixed release tag gives one stable download link that always has the newest build.
-      - name: Publish download link
+      - name: Remove the public APK release (the app now lives in a private repo)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete sms-app --yes --cleanup-tag || true
-          gh release create sms-app SMS-Expenses.apk \
-            --title "SMS Expenses app (build ${{ github.run_number }})" \
-            --notes "Open this page on your Android phone and tap SMS-Expenses.apk to install." \
-            --target "${{ github.sha }}" --prerelease
+        run: gh release delete sms-app --yes --cleanup-tag --repo "${{ github.repository }}" || true
